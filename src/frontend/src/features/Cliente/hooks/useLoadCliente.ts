@@ -13,7 +13,7 @@ export const useLoadCliente = ( filtro: string, mensalista: string ) => {
     });
 
     return {
-        data: data ?? undefined,
+        data: data?.itens ?? undefined,
         loading: isLoading
     }
 }

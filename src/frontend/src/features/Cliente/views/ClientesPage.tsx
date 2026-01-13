@@ -40,7 +40,7 @@ export default function ClientesPage() {
           </tr>
         </thead>
         <tbody>
-          {clientes?.itens?.map((c) => (
+          {clientes?.map((c) => (
             <tr key={c.id}>
               <td>{c.nome}</td>
               <td>{c.telefone}</td>

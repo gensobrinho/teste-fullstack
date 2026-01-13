@@ -1,0 +1,1 @@
+export { default as VeiculoService } from './VeiculoService';

@@ -45,7 +45,7 @@ export class ClienteService {
     }
 
     async createCliente(data: Partial<Cliente>) {
-        const res = apiPost<Partial<Cliente>, Partial<Cliente> >(`${BASE_URL}`, data);
+        const res = apiPost<Cliente, Partial<Cliente>>(`${BASE_URL}`, data);
         return res;
     }
 

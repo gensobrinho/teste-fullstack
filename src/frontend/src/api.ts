@@ -1,5 +1,5 @@
 
-const API = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+export const API = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
 async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {

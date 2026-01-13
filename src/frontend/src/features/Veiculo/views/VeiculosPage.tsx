@@ -15,10 +15,11 @@ export default function VeiculosPage() {
   const { createVeiculo, updateVeiculo, deleteVeiculo } = useVeiculoSendData();
 
   const handleCreate = (createData: Partial<Veiculo>) => {
-    if (createData.ano) {
-      Number(form.ano);
+    const dataToSend = { ...createData };
+    if (dataToSend.ano && typeof dataToSend.ano === 'string') {
+      dataToSend.ano = Number(dataToSend.ano) || undefined;
     }
-    createVeiculo(createData);
+    createVeiculo(dataToSend);
   };
 
   const handleUpdate = (updateData: Partial<Veiculo>) => {

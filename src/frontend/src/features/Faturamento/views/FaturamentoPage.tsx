@@ -7,7 +7,7 @@ import { FaturamentoResponseDTO } from "../types/FaturamentoResponseDTO";
 export default function FaturamentoPage() {
   const [comp, setComp] = useState("2025-08");
   const [selectedFaturaId, setSelectedFaturaId] = useState<string | null>(null);
-  const { faturasData, placasData, isLoading, refetchFaturas } = 
+  const { faturasData, placasData, isLoadingPlacas, isLoadingFaturas, refetchFaturas } = 
     useLoadFaturamento(comp, selectedFaturaId);
   const { createFatura } = useFaturamentoSendData();
 
@@ -44,7 +44,7 @@ export default function FaturamentoPage() {
           </button>
           {isShowingPlacas && (
             <div style={{ marginTop: 6 }}>
-              {isLoading ? "Carregando..." : placasData?.join(", ") || ""}
+              {isLoadingPlacas ? "Carregando..." : placasData?.join(", ") || ""}
             </div>
           )}
         </td>
@@ -53,7 +53,7 @@ export default function FaturamentoPage() {
   };
 
   const renderTable = () => {
-    if (isLoading) {
+    if (isLoadingFaturas) {
       return <p>Carregando...</p>;
     }
     return (

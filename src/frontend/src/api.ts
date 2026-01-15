@@ -1,4 +1,3 @@
-
 export const API = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
 async function handleResponse<T>(response: Response): Promise<T> {
@@ -17,12 +16,16 @@ export async function apiPost<T, B>(
   path: string,
   body: B
 ): Promise<T> {
+  const isFormData = body instanceof FormData;
+  
   const response = await fetch(API + path, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(body),
+    headers: isFormData 
+      ? {}
+      : { 'Content-Type': 'application/json' },
+    body: isFormData 
+      ? body as BodyInit
+      : JSON.stringify(body),
   });
 
   return handleResponse<T>(response);

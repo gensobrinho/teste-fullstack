@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Cliente } from "../../../shared/types";
 import { ClienteService } from "../services";
 import { ClienteQueryEnum } from "../types/ClienteQueryEnum";
+import { ClienteUpdateDTO } from "../types/ClienteUpdateDTO";
 
 export const useClienteSendData = () => {
   const qc = useQueryClient();
@@ -13,12 +14,18 @@ export const useClienteSendData = () => {
   const { isPending: isPendingDelete, mutate: deleteCliente, data: deleteResponse } = useMutation({
     mutationFn: (id: string) => ClienteService.removeCliente(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: [ClienteQueryEnum.getCliente] }),
-  })
+  });
+
+  const { isPending: isPendingUpdate, mutate: updateCliente, data: updateResponse } = useMutation({
+    mutationFn: (data: ClienteUpdateDTO) => ClienteService.updateCliente(data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: [ClienteQueryEnum.getCliente]}),
+  });
 
   return {
-    isLoading: isPendingCreate || isPendingDelete,
-    data: createResponse || deleteResponse,
+    isLoading: isPendingCreate || isPendingDelete || isPendingUpdate,
+    data: createResponse || deleteResponse || updateResponse,
     createCliente,
     deleteCliente,
+    updateCliente
   }
 };

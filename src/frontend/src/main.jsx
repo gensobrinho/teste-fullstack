@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Link, Route, Routes } from 'react-router-dom'
-import CsvUploadPage from './features/CsvUploadPage'
+import CsvUploadPage from './features/Upload/views/CsvUploadPage'
 import FaturamentoPage from './features/Faturamento/views/FaturamentoPage'
 import VeiculosPage from './features/Veiculo/views/VeiculosPage'
 import ClientesPage from './features/Cliente/views/ClientesPage'

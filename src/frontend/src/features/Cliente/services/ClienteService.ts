@@ -1,5 +1,6 @@
-import { apiDelete, apiGet, apiPost } from "../../../api";
+import { apiDelete, apiGet, apiPost, apiPut } from "../../../api";
 import { Cliente, IPageResponse } from "../../../shared/types";
+import { ClienteUpdateDTO } from "../types/ClienteUpdateDTO";
 
 const BASE_URL = '/api/clientes';
 
@@ -38,6 +39,11 @@ export class ClienteService {
 
     async getClienteFiltrado(filtro: string, mensalista: string): Promise<IPageResponse<Cliente>> {
         return this._getClientes({ filtro, mensalista });
+    }
+
+    async updateCliente(body: ClienteUpdateDTO) {
+        const res = apiPut<Cliente, Partial<Cliente>>(`${BASE_URL}/${body.id}`, body.data);
+        return res;
     }
 
     async getClientes(): Promise<IPageResponse<Cliente>> {

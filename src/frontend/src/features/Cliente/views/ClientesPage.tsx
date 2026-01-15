@@ -2,9 +2,12 @@ import { useState } from "react";
 import { useLoadCliente } from "../hooks/useLoadCliente";
 import { useClienteSendData } from "../hooks/useClienteSendData";
 import { Cliente } from "../../../shared/types";
+import { ClienteUpdateDTO } from "../types/ClienteUpdateDTO";
 
 export default function ClientesPage() {
-  const [filtro, setFiltro] = useState("");
+  const [filtro, setFiltro] = useState<string>("");
+  const [editId, setEditId] = useState<string | null>(null);
+  const [error, setError] = useState<string>("");
   const [mensalista, setMensalista] = useState("all");
   const [form, setForm] = useState<Partial<Cliente>>({
     nome: "",
@@ -14,15 +17,93 @@ export default function ClientesPage() {
     valorMensalidade: 0,
   });
   const { data: clientes, loading } = useLoadCliente(filtro, mensalista);
-  const { createCliente, deleteCliente } = useClienteSendData();
+  const { createCliente, deleteCliente, updateCliente } = useClienteSendData();
+
+  const resetForm = () => {
+    setForm({
+      nome: "",
+      telefone: "",
+      endereco: "",
+      mensalista: false,
+      valorMensalidade: 0,
+    });
+    setEditId(null);
+    setError("");
+  };
 
   const handleCreate = () => {
-    if (!form.nome || !form.telefone) return;
-    createCliente(form);
+    if (!form.nome || !form.telefone) {
+      setError("Nome e Telefone são obrigatórios.");
+      return;
+    }
+    setError("");
+
+    createCliente(form, {
+      onSuccess: () => resetForm(),
+      onError: (error: Error) => {
+        const errorMessage = error.message || "Erro ao criar cliente.";
+        setError(errorMessage);
+      },
+    });
+  };
+
+  const handleUpdate = () => {
+    if (!editId) {
+      return;
+    }
+    
+    if (!form.nome || !form.telefone) {
+      setError("Nome e Telefone são obrigatórios.");
+      return;
+    }
+    setError("");
+
+    const body: ClienteUpdateDTO = {
+      id: editId,
+      data: form,
+    };
+
+    updateCliente(body, {
+      onSuccess: () => {
+        resetForm();
+      },
+      onError: (error: Error) => {
+        const errorMessage = error.message || "Erro ao atualizar cliente.";
+        setError(errorMessage);
+      },
+    });
   };
 
   const handleDelete = (id: string) => {
     deleteCliente(id);
+  };
+
+  const editForm = (cliente: Cliente) => {
+    setEditId(cliente.id);
+    setForm({
+      nome: cliente.nome,
+      telefone: cliente.telefone || "",
+      endereco: cliente.endereco || "",
+      mensalista: cliente.mensalista,
+      valorMensalidade: cliente.valorMensalidade || 0,
+    });
+    setError("");
+  };
+
+  const renderButton = () => {
+    if (error) {
+      return <div style={{ color: "red", marginBottom: 8 }}>{error}</div>;
+    }
+    if (editId) {
+      return (
+        <>
+          <button onClick={handleUpdate}>Atualizar</button>
+          <button onClick={resetForm}>Cancelar</button>
+        </>
+      );
+    } else {
+      return <button onClick={handleCreate}>Salvar</button>;
+    }
   };
 
   const renderTable = () => {
@@ -46,6 +127,9 @@ export default function ClientesPage() {
               <td>{c.telefone}</td>
               <td>{c.mensalista ? "Sim" : "Não"}</td>
               <td>
+                <button className="btn-ghost" onClick={() => editForm(c)}>
+                  Editar
+                </button>
                 <button
                   className="btn-ghost"
                   onClick={() => handleDelete(c.id)}
@@ -83,7 +167,7 @@ export default function ClientesPage() {
         </div>
       </div>
 
-      <h3>Novo cliente</h3>
+      <h3>{editId ? "Editar cliente" : "Novo cliente"}</h3>
       <div className="section">
         <div className="grid grid-4">
           <input
@@ -120,7 +204,7 @@ export default function ClientesPage() {
           />
           <div />
           <div />
-          <button onClick={() => handleCreate()}>Salvar</button>
+          {renderButton()}
         </div>
       </div>
 

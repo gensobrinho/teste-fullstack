@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Veiculo } from "../../../shared/types";
 import { VeiculoQueryEnum } from "../types/VeiculoQueryEnum";
 import { VeiculoService } from "../services";
+import { VeiculoUpdateDTO } from "../types/VeiculoUpdateDTO";
 
 export const useVeiculoSendData = () => {
   const qc = useQueryClient();
@@ -19,11 +20,11 @@ export const useVeiculoSendData = () => {
 
   const {
     isPending: isPendingUpdate,
-    mutate: mutateUpdate,
+    mutate: updateVeiculo,
     data: updateResponse,
   } = useMutation({
-    mutationFn: ([id, data]: [string, Partial<Veiculo>]) =>
-      VeiculoService.updateVeiculo(id, data),
+    mutationFn: (body: VeiculoUpdateDTO) =>
+      VeiculoService.updateVeiculo(body),
     onSuccess: () =>
       qc.invalidateQueries({ queryKey: [VeiculoQueryEnum.getVeiculo] }),
   });
@@ -37,10 +38,6 @@ export const useVeiculoSendData = () => {
     onSuccess: () =>
       qc.invalidateQueries({ queryKey: [VeiculoQueryEnum.getVeiculo] }),
   });
-
-  const updateVeiculo = (id: string, data: Partial<Veiculo>) => {
-    mutateUpdate([id, data]);
-  };
 
   return {
     isLoading: isPendingCreate || isPendingUpdate || isPendingDelete,

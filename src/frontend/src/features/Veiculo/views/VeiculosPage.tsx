@@ -1,9 +1,12 @@
 import { useEffect, useState } from "react";
 import { useLoadVeiculo, useVeiculoSendData } from "../hooks";
 import { Veiculo } from "../../../shared/types";
+import { VeiculoUpdateDTO } from "../types/VeiculoUpdateDTO";
 
 export default function VeiculosPage() {
   const [clienteId, setClienteId] = useState("");
+  const [editId, setEditId] = useState<string | null>(null);
+  const [error, setError] = useState("");
   const [form, setForm] = useState<Partial<Veiculo>>({
     placa: "",
     modelo: "",
@@ -11,29 +14,155 @@ export default function VeiculosPage() {
     clienteId: "",
   });
 
-  const { dataVeiculos, dataClientes,  loading } = useLoadVeiculo(clienteId);
+  const { dataVeiculos, dataClientes, loading } = useLoadVeiculo(clienteId);
   const { createVeiculo, updateVeiculo, deleteVeiculo } = useVeiculoSendData();
 
-  const handleCreate = (createData: Partial<Veiculo>) => {
-    const dataToSend = { ...createData };
-    if (dataToSend.ano && typeof dataToSend.ano === 'string') {
-      dataToSend.ano = Number(dataToSend.ano) || undefined;
-    }
-    createVeiculo(dataToSend);
+  const resetForm = () => {
+    setForm({
+      placa: "",
+      modelo: "",
+      ano: "",
+      clienteId: clienteId || "",
+    });
+    setEditId(null);
+    setError("");
   };
 
-  const handleUpdate = (updateData: Partial<Veiculo>) => {
-    const id = updateData.id ?? clienteId;
-    const novoModelo = prompt("Novo modelo", updateData.modelo || "");
-    if (novoModelo === null) {
-      return
+  const handleCreate = () => {
+    if (!form.placa) {
+      setError("Placa é obrigatória.");
+      return;
+    }
+    if (!form.clienteId) {
+      setError("Cliente é obrigatório.");
+      return;
+    }
+    setError("");
+
+    const dataToSend = { ...form };
+    if (dataToSend.ano && typeof dataToSend.ano === "string") {
+      dataToSend.ano = Number(dataToSend.ano) || undefined;
+    }
+    createVeiculo(dataToSend, {
+      onSuccess: () => resetForm(),
+      onError: (error: Error) => {
+        const errorMessage = error.message || "Erro ao criar veículo.";
+        setError(errorMessage);
+      },
+    });
+  };
+
+  const handleUpdate = () => {
+    if (!editId) {
+      return;
+    }
+
+    if (!form.placa) {
+      setError("Placa é obrigatória.");
+      return;
+    }
+    if (!form.clienteId) {
+      setError("Cliente é obrigatório.");
+      return;
+    }
+
+    setError("");
+
+    const dataToSend = { ...form };
+    if (dataToSend.ano && typeof dataToSend.ano === "string") {
+      dataToSend.ano = Number(dataToSend.ano) || undefined;
+    }
+
+    const body: VeiculoUpdateDTO = {
+      id: editId,
+      data: dataToSend,
     };
 
-    updateVeiculo(id, updateData);
+    updateVeiculo(body, {
+      onSuccess: () => {
+        resetForm();
+      },
+      onError: (error: Error) => {
+        const errorMessage = error.message || "Erro ao atualizar veículo.";
+        setError(errorMessage);
+      },
+    });
   };
 
   const handleDelete = (id: string) => {
     deleteVeiculo(id);
+  };
+
+  const editForm = (veiculo: Veiculo) => {
+    setEditId(veiculo.id);
+    setForm({
+      placa: veiculo.placa,
+      modelo: veiculo.modelo || "",
+      ano: veiculo.ano || "",
+      clienteId: veiculo.clienteId,
+    });
+    setError("");
+  };
+
+  const renderButton = () => {
+    if (error) {
+      return <div style={{ color: "red", marginBottom: 8 }}>{error}</div>;
+    }
+    if (editId) {
+      return (
+        <>
+          <button onClick={handleUpdate}>Atualizar</button>
+          <button onClick={resetForm}>Cancelar</button>
+        </>
+      );
+    } else {
+      return <button onClick={handleCreate}>Salvar</button>;
+    }
+  };
+
+  const renderTable = () => {
+    if (loading) {
+      return <p>Carregando...</p>;
+    }
+    return (
+      <table>
+        <thead>
+          <tr>
+            <th>Placa</th>
+            <th>Modelo</th>
+            <th>Ano</th>
+            <th>Cliente</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {dataVeiculos?.map((v) => {
+            const clienteNome =
+              dataClientes?.find((c) => c.id === v.clienteId)?.nome ||
+              v.clienteId;
+            return (
+              <tr key={v.id}>
+                <td>{v.placa}</td>
+                <td>{v.modelo || "-"}</td>
+                <td>{v.ano ?? "-"}</td>
+                <td>{clienteNome}</td>
+                <td style={{ display: "flex", gap: 8 }}>
+                  <button className="btn-ghost" onClick={() => editForm(v)}>
+                    Editar
+                  </button>
+                  <button
+                    className="btn-ghost"
+                    onClick={() => handleDelete(v.id)}
+                  >
+                    Excluir
+                  </button>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    );
   };
 
   useEffect(() => {
@@ -49,14 +178,14 @@ export default function VeiculosPage() {
 
       <div className="section">
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-          <label>Cliente: </label>
+          <label>Filtrar por Cliente: </label>
           <select
             value={clienteId}
             onChange={(e) => {
               setClienteId(e.target.value);
-              setForm((f) => ({ ...f, clienteId: e.target.value }));
             }}
           >
+            <option value="">Todos</option>
             {dataClientes?.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.nome}
@@ -66,13 +195,14 @@ export default function VeiculosPage() {
         </div>
       </div>
 
-      <h3>Novo veículo</h3>
+      <h3>{editId ? "Editar veículo" : "Novo veículo"}</h3>
       <div className="section">
         <div className="grid grid-4">
           <input
             placeholder="Placa"
             value={form.placa}
             onChange={(e) => setForm({ ...form, placa: e.target.value })}
+            disabled={!!editId}
           />
           <input
             placeholder="Modelo"
@@ -81,62 +211,35 @@ export default function VeiculosPage() {
           />
           <input
             placeholder="Ano"
-            value={form.ano}
-            onChange={(e) => setForm({ ...form, ano: e.target.value })}
+            type="number"
+            value={form.ano || ""}
+            onChange={(e) =>
+              setForm({
+                ...form,
+                ano: e.target.value ? Number(e.target.value) : undefined,
+              })
+            }
           />
-          <button onClick={() => handleCreate(form)}>Salvar</button>
+          <select
+            value={form.clienteId || ""}
+            onChange={(e) => setForm({ ...form, clienteId: e.target.value })}
+          >
+            <option value="">Selecione um cliente</option>
+            {dataClientes?.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.nome}
+              </option>
+            ))}
+          </select>
+          <div />
+          <div />
+          <div />
+          {renderButton()}
         </div>
       </div>
 
       <h3 style={{ marginTop: 16 }}>Lista</h3>
-      <div className="section">
-        {loading ? (
-          <p>Carregando...</p>
-        ) : (
-          <table>
-            <thead>
-              <tr>
-                <th>Placa</th>
-                <th>Modelo</th>
-                <th>Ano</th>
-                <th>ClienteId</th>
-                <th>Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              {dataVeiculos?.map((v) => (
-                <tr key={v.id}>
-                  <td>{v.placa}</td>
-                  <td>{v.modelo}</td>
-                  <td>{v.ano ?? "-"}</td>
-                  <td>{v.clienteId}</td>
-                  <td style={{ display: "flex", gap: 8 }}>
-                    <button
-                      className="btn-ghost"
-                      onClick={() => {
-                        handleUpdate(v);
-                        // TODO: trocar cliente via select modal (deixo simples aqui)
-                      }}
-                    >
-                      Editar
-                    </button>
-                    <button
-                      className="btn-ghost"
-                      onClick={() => handleDelete(v.id)}
-                    >
-                      Excluir
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-        <p className="note">
-          TODO: permitir troca de cliente na edição e garantir atualização sem
-          recarregar a página (React Query já invalida a lista).
-        </p>
-      </div>
+      <div className="section">{renderTable()}</div>
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import { apiDelete, apiGet, apiPost, apiPut } from "../../../api";
 import { Veiculo } from "../../../shared/types";
+import { VeiculoUpdateDTO } from "../types/VeiculoUpdateDTO";
 
 const BASE_STRING = '/api/veiculos';
 
@@ -19,8 +20,8 @@ export class VeiculoService {
         return res;
     }
 
-    async updateVeiculo(id: string, data: Partial<Veiculo>): Promise<Veiculo> {
-        const res = await apiPut<Veiculo, Partial<Veiculo>>(`${BASE_STRING}/${id}`, data);
+    async updateVeiculo(body: VeiculoUpdateDTO): Promise<Veiculo> {
+        const res = await apiPut<Veiculo, Partial<Veiculo>>(`${BASE_STRING}/${body.id}`, body.data);
         return res;
     }
 

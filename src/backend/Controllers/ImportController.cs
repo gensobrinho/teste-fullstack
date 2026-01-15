@@ -87,6 +87,16 @@ namespace Parking.Api.Controllers
                     var v = new Veiculo { Placa = placa, Modelo = modelo, Ano = ano, ClienteId = cliente.Id };
                     _db.Veiculos.Add(v);
                     await _db.SaveChangesAsync();
+
+                    _db.VeiculoClienteHistoricos.Add(new VeiculoClienteHistorico
+                    {
+                        VeiculoId = v.Id,
+                        ClienteId = cliente.Id,
+                        DataInicio = DateTime.UtcNow,
+                        DataFim = null
+                    });
+                    await _db.SaveChangesAsync();
+
                     inseridos++;
                 }
                 catch (Exception ex)

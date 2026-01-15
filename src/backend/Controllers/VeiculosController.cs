@@ -35,6 +35,16 @@ namespace Parking.Api.Controllers
             var v = new Veiculo { Placa = placa, Modelo = dto.Modelo, Ano = dto.Ano, ClienteId = dto.ClienteId };
             _db.Veiculos.Add(v);
             await _db.SaveChangesAsync();
+
+            _db.VeiculoClienteHistoricos.Add(new VeiculoClienteHistorico
+            {
+                VeiculoId = v.Id,
+                ClienteId = v.ClienteId,
+                DataInicio = v.DataInclusao,
+                DataFim = null
+            });
+            await _db.SaveChangesAsync();
+
             return CreatedAtAction(nameof(GetById), new { id = v.Id }, v);
         }
 
@@ -55,6 +65,25 @@ namespace Parking.Api.Controllers
             if (!_placa.EhValida(placa)) return BadRequest("Placa inválida.");
             if (await _db.Veiculos.AnyAsync(x => x.Placa == placa && x.Id != id)) return Conflict("Placa já existe.");
 
+            var clienteAnteriorId = v.ClienteId;
+            var clienteNovoId = dto.ClienteId;
+            var agora = DateTime.UtcNow;
+
+            if (clienteAnteriorId != clienteNovoId)
+            {
+                await _db.VeiculoClienteHistoricos
+                    .Where(h => h.VeiculoId == id && h.DataFim == null)
+                    .ExecuteUpdateAsync(setters => setters.SetProperty(h => h.DataFim, agora));
+
+                _db.VeiculoClienteHistoricos.Add(new VeiculoClienteHistorico
+                {
+                    VeiculoId = id,
+                    ClienteId = clienteNovoId,
+                    DataInicio = agora,
+                    DataFim = null
+                });
+            }
+
             v.Placa = placa;
             v.Modelo = dto.Modelo;
             v.Ano = dto.Ano;
@@ -68,6 +97,13 @@ namespace Parking.Api.Controllers
         {
             var v = await _db.Veiculos.FindAsync(id);
             if (v == null) return NotFound();
+
+            var agora = DateTime.UtcNow;
+
+            await _db.VeiculoClienteHistoricos
+                .Where(h => h.VeiculoId == id && h.DataFim == null)
+                .ExecuteUpdateAsync(setters => setters.SetProperty(h => h.DataFim, agora));
+
             _db.Veiculos.Remove(v);
             await _db.SaveChangesAsync();
             return NoContent();
